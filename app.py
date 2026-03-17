@@ -361,19 +361,27 @@ def process_query(query: str, backend, csv_manager, docs, fund_data) -> list:
                             'hide_last_updated': True
                         })
                 else:
-                    # Multiple documents - list format
+                    # Multiple documents - list format with clickable links
                     answer_lines = [f"{fund}:", ""]
                     for doc_type in doc_types:
                         url = docs.get(fund, {}).get(doc_type, "")
                         if url and url.startswith("http"):
-                            answer_lines.append(f"{doc_type}: {url}")
+                            answer_lines.append(f"{doc_type}: 🔗 View Source on AxisMF.com ↗")
+                    
+                    # Store all document URLs for the response
+                    doc_urls = {}
+                    for doc_type in doc_types:
+                        url = docs.get(fund, {}).get(doc_type, "")
+                        if url and url.startswith("http"):
+                            doc_urls[doc_type] = url
                     
                     responses.append({
                         'answer': "\n".join(answer_lines),
                         'source_url': None,
                         'source_name': None,
                         'fund': fund,
-                        'hide_last_updated': True
+                        'hide_last_updated': True,
+                        'doc_urls': doc_urls  # Store multiple URLs
                     })
         return responses
     
@@ -583,7 +591,16 @@ def main():
             st.markdown(f'<div class="msg"><div class="msg-avatar user">👤</div><div class="msg-content user">{msg["content"]}</div></div>', unsafe_allow_html=True)
         else:
             fund_label = f"<strong>{msg.get('fund', '')}</strong><br>" if msg.get('fund') else ""
-            src = f'<div class="msg-source"><a href="{msg["source_url"]}" target="_blank">🔗 View Source on {msg.get("source_name", "Source")} ↗</a></div>' if msg.get('source_url') else ""
+            
+            # Handle multiple document URLs
+            src = ""
+            if msg.get('doc_urls'):
+                # Multiple document links
+                for doc_type, url in msg['doc_urls'].items():
+                    src += f'<div class="msg-source"><a href="{url}" target="_blank">🔗 View {doc_type} on AxisMF.com ↗</a></div>'
+            elif msg.get('source_url'):
+                src = f'<div class="msg-source"><a href="{msg["source_url"]}" target="_blank">🔗 View Source on {msg.get("source_name", "Source")} ↗</a></div>'
+            
             # Hide last_updated for out-of-scope responses or when flag is set
             hide_last_updated = msg.get('hide_last_updated', False)
             last_updated = f'<div class="msg-time">Last updated: {msg.get("last_updated", "")}</div>' if (msg.get('last_updated') and not hide_last_updated) else ""
@@ -611,7 +628,7 @@ def main():
         
         # Add bot responses
         for resp in responses:
-            st.session_state.chat_history.append({
+            msg = {
                 'role': 'assistant',
                 'content': resp['answer'],
                 'source_url': resp.get('source_url'),
@@ -619,7 +636,11 @@ def main():
                 'fund': resp.get('fund'),
                 'last_updated': resp.get('last_updated', datetime.now().strftime("%Y-%m-%d")),
                 'hide_last_updated': resp.get('hide_last_updated', False)
-            })
+            }
+            # Add doc_urls if present (for multi-document queries)
+            if 'doc_urls' in resp:
+                msg['doc_urls'] = resp['doc_urls']
+            st.session_state.chat_history.append(msg)
         
         # Clear input by incrementing key
         st.session_state.input_key += 1
