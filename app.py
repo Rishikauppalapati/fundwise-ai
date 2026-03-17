@@ -401,12 +401,11 @@ def main():
             for idx, (doc_type, icon) in enumerate([('KIM', '📋'), ('SID', '📄'), ('Leaflet', '📑')]):
                 with doc_cols[idx]:
                     url = fund_docs.get(doc_type, "")
-                    button_key = f"doc_{fund_idx}_{doc_type}"
                     if url and url.startswith("http"):
-                        # Use st.link_button for proper clickable buttons
-                        st.link_button(f"{icon} {doc_type}", url, key=button_key, use_container_width=True)
+                        # Use HTML link styled as button
+                        st.markdown(f'<a href="{url}" target="_blank" style="display:block;text-align:center;padding:0.6rem 1rem;background:#1976d2;color:#ffffff !important;text-decoration:none;border-radius:8px;font-size:0.85rem;font-weight:500;">{icon} {doc_type}</a>', unsafe_allow_html=True)
                     else:
-                        st.button(f"{icon} {doc_type}", key=button_key, disabled=True, use_container_width=True)
+                        st.markdown(f'<div style="display:block;text-align:center;padding:0.6rem 1rem;background:#e0e0e0;color:#999;border-radius:8px;font-size:0.85rem;">{icon} {doc_type}</div>', unsafe_allow_html=True)
     
     st.divider()
     
