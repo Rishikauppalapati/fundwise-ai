@@ -58,9 +58,9 @@ def load_document_links():
     
     try:
         import pandas as pd
-        df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path, header=None)
         
-        # KIM row (index 8) - columns 0,3,6,9
+        # KIM row (index 8) - columns 0, 3, 6, 9 (URL, type, empty, URL, type, empty, URL, type, empty, URL)
         if len(df) > 8:
             row = df.iloc[8]
             docs["Axis Large Cap Fund"]["KIM"] = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
@@ -68,7 +68,7 @@ def load_document_links():
             docs["Axis Nifty 500 Index Fund"]["KIM"] = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
             docs["Axis ELSS Tax Saver"]["KIM"] = str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else ""
         
-        # SID row (index 9) - columns 0,3,6,9
+        # SID row (index 9) - columns 0, 3, 6, 9
         if len(df) > 9:
             row = df.iloc[9]
             docs["Axis Large Cap Fund"]["SID"] = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
@@ -76,7 +76,7 @@ def load_document_links():
             docs["Axis Nifty 500 Index Fund"]["SID"] = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
             docs["Axis ELSS Tax Saver"]["SID"] = str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else ""
         
-        # Leaflet row (index 10) - columns 0,3,6,9
+        # Leaflet row (index 10) - columns 0, 3, 6, 9
         if len(df) >= 11:
             row = df.iloc[10]
             docs["Axis Large Cap Fund"]["Leaflet"] = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
