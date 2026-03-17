@@ -393,7 +393,7 @@ def main():
         st.markdown("#### 📄 Fund Documents")
         st.markdown("<p style='color:#666;font-size:0.85rem;margin-bottom:1rem;'>Click to view official documents:</p>", unsafe_allow_html=True)
         
-        for fund in ALL_FUNDS:
+        for fund_idx, fund in enumerate(ALL_FUNDS):
             st.markdown(f"<p style='font-size:0.9rem;font-weight:500;color:#333;margin:0.75rem 0 0.5rem 0;'>{fund}</p>", unsafe_allow_html=True)
             doc_cols = st.columns(3)
             fund_docs = docs.get(fund, {})
@@ -401,11 +401,12 @@ def main():
             for idx, (doc_type, icon) in enumerate([('KIM', '📋'), ('SID', '📄'), ('Leaflet', '📑')]):
                 with doc_cols[idx]:
                     url = fund_docs.get(doc_type, "")
+                    button_key = f"doc_{fund_idx}_{doc_type}"
                     if url and url.startswith("http"):
                         # Use st.link_button for proper clickable buttons
-                        st.link_button(f"{icon} {doc_type}", url, use_container_width=True)
+                        st.link_button(f"{icon} {doc_type}", url, key=button_key, use_container_width=True)
                     else:
-                        st.button(f"{icon} {doc_type}", disabled=True, use_container_width=True)
+                        st.button(f"{icon} {doc_type}", key=button_key, disabled=True, use_container_width=True)
     
     st.divider()
     
