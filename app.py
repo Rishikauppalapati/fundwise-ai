@@ -148,12 +148,15 @@ def load_css():
     .doc-btn.disabled {background: #e0e0e0; color: #999 !important; cursor: not-allowed;}
     
     /* Input styling */
-    .stTextInput>div>div>input {border: 2px solid #e0e0e0 !important; border-radius: 8px !important; padding: 0.75rem !important;}
-    .stTextInput>div>div>input:focus {border-color: #1976d2 !important; box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;}
+    .stTextInput > div > div > input {
+        border: 2px solid #667eea !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 1.25rem !important;
+        font-size: 0.95rem !important;
+        background: white !important;
+    }
     
-    /* Send button */
-    .stButton>button[kind="primary"] {background: #ff5252 !important; border: none !important;}
-    .stButton>button[kind="primary"]:hover {background: #ff1744 !important;}
+    .streamlit-expanderHeader {font-size: 0.9rem !important; font-weight: 600 !important;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -246,10 +249,35 @@ def get_explicit_value(fund: str, data_type: str, fund_data: dict) -> str:
     return None
 
 
+def is_out_of_scope(query: str) -> bool:
+    """Check if query is out of scope (investment advice, general questions, etc.)"""
+    query_lower = query.lower()
+    
+    # Out of scope keywords
+    out_of_scope = [
+        'suggestion', 'suggest', 'advice', 'advise', 'recommend', 'should i', 
+        'investment advice', 'good investment', 'bad investment', 'buy', 'sell',
+        'general', 'what is mutual fund', 'how to invest', 'investment strategy',
+        'portfolio', 'diversify', 'allocation', 'tips', 'tricks', 'best fund',
+        'worst fund', 'top performing', 'bottom performing'
+    ]
+    
+    return any(keyword in query_lower for keyword in out_of_scope)
+
+
 def process_query(query: str, backend, csv_manager, docs, fund_data) -> list:
     """Process query and return list of responses (for multi-fund support)"""
     responses = []
     query_lower = query.lower()
+    
+    # Check if query is out of scope
+    if is_out_of_scope(query):
+        return [{
+            'answer': "I am a factual mutual fund assistant and can only help with data provided in my knowledge base. For investment advice or general questions, please consult a financial advisor.",
+            'source_url': None,
+            'source_name': None,
+            'fund': None
+        }]
     
     # Check if fund name is missing
     funds = detect_funds_in_query(query)
@@ -380,50 +408,45 @@ def main():
     # Header
     st.markdown('<div class="app-header"><h1>📊 Welcome to FundWise AI</h1><p>Your Mutual Fund Assistant for Axis Funds</p></div>', unsafe_allow_html=True)
     
-    # Disclaimer - Updated format
-    st.markdown('<div class="disclaimer"><strong>⚠️ Disclaimer:</strong> This chatbot provides factual information only, not investment advice. Please consult a SEBI-registered financial advisor before investing.</div>', unsafe_allow_html=True)
+    # Disclaimer
+    st.markdown('<div class="disclaimer">⚠️ <strong>Disclaimer:</strong> This chatbot provides factual information only, not investment advice. Please consult a SEBI-registered financial advisor before investing.</div>', unsafe_allow_html=True)
     
-    # Available Funds Section - Updated format
-    st.markdown('<div class="funds-box"><h4>📋 Available Funds 🔗</h4><p>Get instant answers about NAV, Expense Ratio, Minimum SIP, Risk Level, and Benchmark.</p><div class="fund-tags">' + 
-                ''.join([f'<span class="fund-tag">{f}</span>' for f in ALL_FUNDS]) + 
-                '</div></div>', unsafe_allow_html=True)
+    # Available Funds
+    tags_html = "".join([f'<span class="fund-tag">{f}</span>' for f in ALL_FUNDS])
+    st.markdown(f'<div class="funds-box"><h4>📋 Available Funds</h4><p style="color:#666;font-size:0.85rem;margin:0 0 0.5rem 0;">Get instant answers about NAV, Expense Ratio, Minimum SIP, Risk Level, and Benchmark.</p><div class="fund-tags">{tags_html}</div></div>', unsafe_allow_html=True)
     
-    # Fund Documents section - Fixed styling
-    with st.container():
-        st.markdown("#### 📄 Fund Documents")
-        st.markdown("<p style='color:#666;font-size:0.85rem;margin-bottom:1rem;'>Click to view official documents:</p>", unsafe_allow_html=True)
-        
-        for fund_idx, fund in enumerate(ALL_FUNDS):
-            st.markdown(f"<p style='font-size:0.9rem;font-weight:500;color:#333;margin:0.75rem 0 0.5rem 0;'>{fund}</p>", unsafe_allow_html=True)
-            doc_cols = st.columns(3)
-            fund_docs = docs.get(fund, {})
-            
-            for idx, (doc_type, icon) in enumerate([('KIM', '📋'), ('SID', '📄'), ('Leaflet', '📑')]):
-                with doc_cols[idx]:
-                    url = fund_docs.get(doc_type, "")
+    # Fund Documents - Dropdown style
+    with st.expander("📄 Fund Documents"):
+        for fund, links in docs.items():
+            st.markdown(f"**{fund}**")
+            cols = st.columns(3)
+            for i, (doc_type, icon) in enumerate([("KIM", "📄"), ("SID", "📋"), ("Leaflet", "📑")]):
+                with cols[i]:
+                    url = links.get(doc_type, "")
                     if url and url.startswith("http"):
-                        # Use HTML link styled as button
-                        st.markdown(f'<a href="{url}" target="_blank" style="display:block;text-align:center;padding:0.6rem 1rem;background:#1976d2;color:#ffffff !important;text-decoration:none;border-radius:8px;font-size:0.85rem;font-weight:500;">{icon} {doc_type}</a>', unsafe_allow_html=True)
+                        st.markdown(f'<a href="{url}" target="_blank"><button style="width:100%;padding:0.5rem;background:#667eea;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;">{icon} {doc_type}</button></a>', unsafe_allow_html=True)
                     else:
-                        st.markdown(f'<div style="display:block;text-align:center;padding:0.6rem 1rem;background:#e0e0e0;color:#999;border-radius:8px;font-size:0.85rem;">{icon} {doc_type}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<button style="width:100%;padding:0.5rem;background:#e0e0e0;color:#999;border:none;border-radius:8px;font-size:0.85rem;" disabled>{icon} {doc_type}</button>', unsafe_allow_html=True)
+            st.divider()
     
-    st.divider()
-    
-    # Suggestions with heading - Fixed functionality
+    # Suggestions with heading
     st.markdown('<p class="suggestions-title">💡 Ask AI About Your Funds</p>', unsafe_allow_html=True)
-    
+    st.markdown('<div class="suggestions">', unsafe_allow_html=True)
+    cols = st.columns(3)
     suggestions = [
         "What is the NAV of Axis Large Cap Fund?",
-        "Show me the expense ratio of all funds",
-        "What is the minimum SIP for Axis ELSS?"
+        "What is the expense ratio of Axis ELSS Tax Saver Fund?",
+        "What is the minimum SIP for Axis Small Cap Fund?"
     ]
-    
-    sugg_cols = st.columns(3)
-    for i, suggestion in enumerate(suggestions):
-        with sugg_cols[i]:
-            if st.button(suggestion, key=f"sugg_{i}", use_container_width=True):
-                handle_suggestion_click(suggestion)
+    for i, s in enumerate(suggestions):
+        with cols[i]:
+            if st.button(s, key=f"s_{i}", use_container_width=True):
+                st.session_state.pending = s
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Chat Section
+    st.markdown('<h4 style="margin: 1.5rem 0 1rem 0; color: #333;">💬 Chat with FundWise AI</h4>', unsafe_allow_html=True)
     
     # Messages
     for msg in st.session_state.chat_history:
@@ -435,14 +458,18 @@ def main():
             last_updated = f'<div class="msg-time">Last updated: {msg.get("last_updated", "")}</div>' if msg.get('last_updated') else ""
             st.markdown(f'<div class="msg"><div class="msg-avatar bot">🤖</div><div class="msg-content">{fund_label}<strong>Answer:</strong> {msg["content"]}{src}{last_updated}</div></div>', unsafe_allow_html=True)
     
-    # Input with visible border
+    # Input with dynamic key for clearing
     c1, c2 = st.columns([6, 1])
     with c1:
-        inp = st.text_input("Message", key=f"inp_{st.session_state.input_key}", 
-                           placeholder="Type your question...", 
-                           label_visibility="collapsed")
+        inp = st.text_input("Msg", key=f"inp_{st.session_state.input_key}", placeholder="Type your question...", label_visibility="collapsed")
     with c2:
-        send = st.button("➤", key="snd", type="primary", use_container_width=True)
+        send = st.button("➤", key="snd", type="primary")
+    
+    # Handle pending from suggestions
+    if 'pending' in st.session_state:
+        inp = st.session_state.pending
+        del st.session_state.pending
+        send = True
     
     if send and inp:
         # Add user message
@@ -454,12 +481,12 @@ def main():
         # Add bot responses
         for resp in responses:
             st.session_state.chat_history.append({
-                'role': 'bot',
+                'role': 'assistant',
                 'content': resp['answer'],
                 'source_url': resp.get('source_url'),
                 'source_name': resp.get('source_name'),
                 'fund': resp.get('fund'),
-                'last_updated': resp.get('last_updated')
+                'last_updated': resp.get('last_updated', datetime.now().strftime("%Y-%m-%d"))
             })
         
         # Clear input by incrementing key
