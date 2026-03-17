@@ -182,13 +182,29 @@ def init_session():
 
 
 def detect_funds_in_query(query: str) -> list:
-    """Detect all funds mentioned in query"""
+    """Detect all funds mentioned in query with flexible matching"""
     query_lower = query.lower()
     detected = []
     
+    # Direct full name match
     for fund in ALL_FUNDS:
         if fund.lower() in query_lower:
             detected.append(fund)
+    
+    # If no full match, check for partial/fund type matches
+    if not detected:
+        # Large Cap Fund detection
+        if any(term in query_lower for term in ['large cap', 'largecap']):
+            detected.append("Axis Large Cap Fund")
+        # Small Cap Fund detection
+        elif any(term in query_lower for term in ['small cap', 'smallcap']):
+            detected.append("Axis Small Cap Fund")
+        # Nifty 500 detection
+        elif any(term in query_lower for term in ['nifty 500', 'nifty500', 'index fund']):
+            detected.append("Axis Nifty 500 Index Fund")
+        # ELSS detection
+        elif any(term in query_lower for term in ['elss', 'tax saver', 'tax saver fund']):
+            detected.append("Axis ELSS Tax Saver")
     
     if any(phrase in query_lower for phrase in ['all funds', 'all axis funds', 'each fund', 'every fund']):
         return ALL_FUNDS
@@ -227,14 +243,16 @@ def get_document_response(fund: str, doc_type: str, docs: dict) -> dict:
     url = docs.get(fund, {}).get(doc_type, "")
     if url and url.startswith("http"):
         return {
-            'answer': f"Here is the {doc_type} for {fund}.",
+            'answer': f"You can access the {doc_type} here.",
             'source_url': url,
-            'source_name': 'AxisMF.com'
+            'source_name': 'AxisMF.com',
+            'hide_last_updated': True
         }
     return {
         'answer': f"Sorry, {doc_type} document is not available for {fund}.",
         'source_url': None,
-        'source_name': None
+        'source_name': None,
+        'hide_last_updated': True
     }
 
 
@@ -278,6 +296,17 @@ def process_query(query: str, backend, csv_manager, docs, fund_data) -> list:
     if is_out_of_scope(query):
         return [{
             'answer': "I am a factual mutual fund assistant and can only help with data provided in my knowledge base. For investment advice or general questions, please consult a financial advisor.",
+            'source_url': None,
+            'source_name': None,
+            'fund': None,
+            'hide_last_updated': True
+        }]
+    
+    # Check if it's a general greeting or non-fund query
+    general_queries = ['hi', 'hello', 'hey', 'how are you', 'what can you do', 'help']
+    if any(q in query_lower for q in general_queries):
+        return [{
+            'answer': "Hello! I'm FundWise AI, your mutual fund assistant. I can help you with information about Axis Mutual Funds including NAV, expense ratio, minimum SIP, and official documents (KIM, SID, Leaflet). What would you like to know?",
             'source_url': None,
             'source_name': None,
             'fund': None,
