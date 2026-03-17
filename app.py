@@ -60,7 +60,7 @@ def load_document_links():
         import pandas as pd
         df = pd.read_csv(csv_path)
         
-        # KIM row (index 8)
+        # KIM row (index 8) - columns 0,3,6,9
         if len(df) > 8:
             row = df.iloc[8]
             docs["Axis Large Cap Fund"]["KIM"] = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
@@ -68,17 +68,21 @@ def load_document_links():
             docs["Axis Nifty 500 Index Fund"]["KIM"] = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
             docs["Axis ELSS Tax Saver"]["KIM"] = str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else ""
         
-        # SID and Leaflet in row 9 (index 9)
+        # SID row (index 9) - columns 0,3,6,9
         if len(df) > 9:
             row = df.iloc[9]
-            for fund, col_idx in [("Axis Large Cap Fund", 0), ("Axis Small Cap Fund", 3), 
-                                   ("Axis Nifty 500 Index Fund", 6), ("Axis ELSS Tax Saver", 9)]:
-                val = str(row.iloc[col_idx]).strip() if pd.notna(row.iloc[col_idx]) else ""
-                if val:
-                    if 'sid' in val.lower():
-                        docs[fund]["SID"] = val
-                    elif 'leaflet' in val.lower() or 'factsheets' in val.lower():
-                        docs[fund]["Leaflet"] = val
+            docs["Axis Large Cap Fund"]["SID"] = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
+            docs["Axis Small Cap Fund"]["SID"] = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+            docs["Axis Nifty 500 Index Fund"]["SID"] = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
+            docs["Axis ELSS Tax Saver"]["SID"] = str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else ""
+        
+        # Leaflet row (index 10) - columns 0,3,6,9
+        if len(df) > 10:
+            row = df.iloc[10]
+            docs["Axis Large Cap Fund"]["Leaflet"] = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
+            docs["Axis Small Cap Fund"]["Leaflet"] = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+            docs["Axis Nifty 500 Index Fund"]["Leaflet"] = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
+            docs["Axis ELSS Tax Saver"]["Leaflet"] = str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else ""
         
     except Exception as e:
         st.error(f"Error loading documents: {e}")
@@ -276,7 +280,8 @@ def process_query(query: str, backend, csv_manager, docs, fund_data) -> list:
             'answer': "I am a factual mutual fund assistant and can only help with data provided in my knowledge base. For investment advice or general questions, please consult a financial advisor.",
             'source_url': None,
             'source_name': None,
-            'fund': None
+            'fund': None,
+            'hide_last_updated': True
         }]
     
     # Check if fund name is missing
@@ -455,7 +460,9 @@ def main():
         else:
             fund_label = f"<strong>{msg.get('fund', '')}</strong><br>" if msg.get('fund') else ""
             src = f'<div class="msg-source"><a href="{msg["source_url"]}" target="_blank">🔗 View Source on {msg.get("source_name", "Source")} ↗</a></div>' if msg.get('source_url') else ""
-            last_updated = f'<div class="msg-time">Last updated: {msg.get("last_updated", "")}</div>' if msg.get('last_updated') else ""
+            # Hide last_updated for out-of-scope responses or when flag is set
+            hide_last_updated = msg.get('hide_last_updated', False)
+            last_updated = f'<div class="msg-time">Last updated: {msg.get("last_updated", "")}</div>' if (msg.get('last_updated') and not hide_last_updated) else ""
             st.markdown(f'<div class="msg"><div class="msg-avatar bot">🤖</div><div class="msg-content">{fund_label}<strong>Answer:</strong> {msg["content"]}{src}{last_updated}</div></div>', unsafe_allow_html=True)
     
     # Input with dynamic key for clearing
@@ -486,7 +493,8 @@ def main():
                 'source_url': resp.get('source_url'),
                 'source_name': resp.get('source_name'),
                 'fund': resp.get('fund'),
-                'last_updated': resp.get('last_updated', datetime.now().strftime("%Y-%m-%d"))
+                'last_updated': resp.get('last_updated', datetime.now().strftime("%Y-%m-%d")),
+                'hide_last_updated': resp.get('hide_last_updated', False)
             })
         
         # Clear input by incrementing key
