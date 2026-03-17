@@ -170,7 +170,7 @@ def load_css():
     .stTextInput > div > div > input::placeholder {color: #8888a8 !important;}
     
     /* Expander - Very light gray background for Fund Documents */
-    .streamlit-expanderHeader {font-size: 0.9rem !important; font-weight: 600 !important; color: #f0f0f5 !important; background: #e8e8f0 !important; border-radius: 8px !important; border: 1px solid #d0d0e0 !important;}
+    .streamlit-expanderHeader {font-size: 0.9rem !important; font-weight: 600 !important; color: #f8f8f8 !important; background: #e8e8f0 !important; border-radius: 8px !important; border: 1px solid #d0d0e0 !important;}
     .streamlit-expanderContent {background: #f5f5fa !important; border: 1px solid #d0d0e0 !important; border-top: none !important; border-radius: 0 0 8px 8px !important;}
     .streamlit-expanderHeader:hover {background: #e0e0e8 !important;}
     
